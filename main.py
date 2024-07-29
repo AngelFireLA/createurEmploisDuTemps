@@ -88,5 +88,5 @@ plt.ylabel('Heure')
 
 # Save the plot as a PNG image
 plt.tight_layout()
-plt.savefig('emploi_du_temps11.png')
+plt.savefig('emploi_du_temps12.png')
 plt.close(fig)
