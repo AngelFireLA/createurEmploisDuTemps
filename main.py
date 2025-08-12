@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 # Read the CSV file
-schedule = pd.read_csv('schedule.csv')
+schedule = pd.read_csv('file.csv')
 
 # Define a function to convert time to a numerical value
 def time_to_num(time_str):
@@ -88,5 +88,5 @@ plt.ylabel('Heure')
 
 # Save the plot as a PNG image
 plt.tight_layout()
-plt.savefig('emploi_du_temps12.png')
+plt.savefig('emploi_du_temps14.png')
 plt.close(fig)
