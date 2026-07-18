@@ -1,4 +1,10 @@
-
-/.idea
+.idea/
 *.png
 file.csv
+__pycache__/
+*.py[cod]
+.venv/
+data/schedule.json
+data/*.tmp
+.pytest_cache/
+flask-dev*.log
