@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f4f2">
+  <title>Emploi du temps</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  <main>
+    <section class="workspace" aria-label="Éditeur d'emploi du temps">
+      <div class="actions">
+        <button class="button button-primary" id="addButton" type="button">＋ Ajouter</button>
+        <button class="button button-quiet" id="copyDayButton" type="button">Copier un jour</button>
+        <details class="export-menu">
+          <summary class="button button-quiet">Exporter</summary>
+          <div class="menu-card">
+            <a href="/export/png">Image PNG</a>
+            <a href="/export/csv">Fichier CSV</a>
+            <a href="/export/json">Sauvegarde JSON</a>
+            <button type="button" id="printButton">Imprimer / PDF</button>
+          </div>
+        </details>
+        <button class="button button-quiet" id="settingsButton" type="button">Réglages</button>
+      </div>
+      <div class="calendar-viewport" id="calendarViewport">
+        <div class="calendar" id="calendar" aria-label="Calendrier de la semaine">
+          <div class="week-head" id="weekHead"></div>
+          <div class="calendar-body" id="calendarBody"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="side-dialog" id="eventDialog">
+    <form id="eventForm">
+      <div class="dialog-head">
+        <span class="dialog-icon" aria-hidden="true">＋</span>
+        <div>
+          <p class="eyebrow" id="eventEyebrow">Nouvelle activité</p>
+          <h2 id="eventDialogTitle">Ajouter à la semaine</h2>
+        </div>
+        <button class="close-button" type="button" data-close="eventDialog" aria-label="Fermer">×</button>
+      </div>
+      <div class="dialog-content">
+        <input id="eventId" type="hidden">
+        <label class="field field-large">
+          <span>Nom de l'activité</span>
+          <input id="eventTitle" name="title" maxlength="120" placeholder="Ex. Réunion d'équipe" required autofocus>
+        </label>
+
+        <fieldset class="field day-picker">
+          <legend>Jours concernés</legend>
+          <div id="eventDays">
+            {% for day in days %}
+              <label><input type="checkbox" value="{{ loop.index0 }}"><span>{{ day[:3] }}</span></label>
+            {% endfor %}
+          </div>
+          <small>Choisissez plusieurs jours pour ajouter la même activité d'un coup.</small>
+        </fieldset>
+
+        <div class="two-columns">
+          <label class="field"><span>Début</span><input id="eventStart" type="time" required></label>
+          <label class="field"><span>Fin</span><input id="eventEnd" type="time" required></label>
+        </div>
+
+        <label class="field"><span>Notes <em>facultatif</em></span><textarea id="eventNotes" rows="3" maxlength="1000" placeholder="Lieu, objectif, détails…"></textarea></label>
+
+        <fieldset class="field color-field">
+          <legend>Couleur</legend>
+          <div id="colorChoices" class="color-choices"></div>
+          <input id="eventColor" type="color" value="#6C8CF5" aria-label="Couleur personnalisée">
+        </fieldset>
+
+        <fieldset class="field choice-field">
+          <legend>Si l'horaire est déjà occupé</legend>
+          <label><input type="radio" name="behavior" value="overlap" checked><span><b>Faire cohabiter</b><small>Les activités se partagent la largeur</small></span></label>
+          <label><input type="radio" name="behavior" value="replace"><span><b>Remplacer</b><small>Supprime ce qui chevauche ce créneau</small></span></label>
+        </fieldset>
+      </div>
+      <div class="dialog-actions">
+        <button class="button button-danger is-hidden" id="deleteButton" type="button">Supprimer</button>
+        <span class="action-spacer"></span>
+        <button class="button button-quiet" type="button" data-close="eventDialog">Annuler</button>
+        <button class="button button-primary" type="submit" id="saveEventButton">Ajouter</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="copyDialog">
+    <form id="copyForm">
+      <div class="dialog-head">
+        <span class="dialog-icon" aria-hidden="true">⇄</span>
+        <div><p class="eyebrow">Répéter une journée</p><h2>Copier un jour entier</h2></div>
+        <button class="close-button" type="button" data-close="copyDialog" aria-label="Fermer">×</button>
+      </div>
+      <div class="dialog-content">
+        <label class="field"><span>Jour à copier</span>
+          <select id="copySource">{% for day in days %}<option value="{{ loop.index0 }}">{{ day }}</option>{% endfor %}</select>
+        </label>
+        <fieldset class="field day-picker">
+          <legend>Copier vers</legend>
+          <div id="copyTargets">
+            {% for day in days %}<label><input type="checkbox" value="{{ loop.index0 }}"><span>{{ day[:3] }}</span></label>{% endfor %}
+          </div>
+        </fieldset>
+        <fieldset class="field choice-field">
+          <legend>Contenu déjà présent</legend>
+          <label><input type="radio" name="copyBehavior" value="replace" checked><span><b>Remplacer la journée</b><small>La destination devient identique à la source</small></span></label>
+          <label><input type="radio" name="copyBehavior" value="merge"><span><b>Ajouter au contenu</b><small>Conserve aussi les activités existantes</small></span></label>
+        </fieldset>
+      </div>
+      <div class="dialog-actions">
+        <button class="button button-quiet" type="button" data-close="copyDialog">Annuler</button>
+        <button class="button button-primary" type="submit">Copier la journée</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="settingsDialog">
+    <form id="settingsForm">
+      <div class="dialog-head">
+        <span class="dialog-icon" aria-hidden="true">⌁</span>
+        <div><p class="eyebrow">Affichage</p><h2>Régler la grille</h2></div>
+        <button class="close-button" type="button" data-close="settingsDialog" aria-label="Fermer">×</button>
+      </div>
+      <div class="dialog-content">
+        <div class="two-columns">
+          <label class="field"><span>Première heure</span><select id="startHour"></select></label>
+          <label class="field"><span>Dernière heure</span><select id="endHour"></select></label>
+        </div>
+        <label class="field"><span>Précision des déplacements</span>
+          <select id="snapMinutes"><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 heure</option></select>
+        </label>
+      </div>
+      <div class="dialog-actions"><button class="button button-primary" type="submit">Enregistrer</button></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
